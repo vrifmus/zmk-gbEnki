@@ -1,0 +1,8 @@
+# Copyright (c) 2020 Pete Johanson
+# SPDX-License-Identifier: MIT
+
+config SHIELD_GBENKI_LEFT
+    def_bool $(shields_list_contains,GBENKI_left)
+
+config SHIELD_GBENKI_RIGHT
+    def_bool $(shields_list_contains,GBENKI_right)
