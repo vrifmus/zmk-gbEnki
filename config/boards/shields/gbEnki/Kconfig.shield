@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 config SHIELD_GBENKI_LEFT
-    def_bool $(shields_list_contains,GBENKI_left)
+    def_bool $(shields_list_contains,gbEnki_left)
 
 config SHIELD_GBENKI_RIGHT
-    def_bool $(shields_list_contains,GBENKI_right)
+    def_bool $(shields_list_contains,gbEnki_right)
