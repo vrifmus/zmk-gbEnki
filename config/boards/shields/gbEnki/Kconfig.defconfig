@@ -10,6 +10,9 @@ endif
 
 if SHIELD_GBENKI_LEFT || SHIELD_GBENKI_RIGHT
 
+config ZMK_CHECK_BATTERY_BEH
+    default y
+
 config ZMK_SPLIT
     default y
 
