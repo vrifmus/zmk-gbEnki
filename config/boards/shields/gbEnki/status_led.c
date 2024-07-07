@@ -100,14 +100,11 @@ static inline void ledOFF(const struct led *led)
 
 static void led_all_OFF()
 {
-
-
-#if IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
     for (int i = 0; i < (sizeof(battery_leds) / sizeof(struct led)); i++)
     {
         ledOFF(&battery_leds[i]);
     }
-#endif
+
 }
 
 void led_configure(const struct led *led)
@@ -144,84 +141,83 @@ struct k_timer bat_timer;
 int led_i = 0;
 void led_bat_animation()
 {
-
-#ifdef show_bat_status_all_time
-    enum zmk_usb_conn_state usb_status_con = zmk_usb_get_conn_state();
-    if (usb_status_con == ZMK_USB_CONN_NONE)
-    {
-        led_all_OFF();
-        return;
-    }
-#endif
-
-#ifdef disable_led_sleep_pc
-    enum usb_dc_status_code usb_status_suspend = zmk_usb_get_status();
-    if (usb_status_suspend == USB_DC_SUSPEND)
-    {
-        led_all_OFF();
-        return;
-    }
-#endif
-
-#ifdef real_bat_animation
-    uint8_t level = zmk_battery_state_of_charge();
-
-    switch (led_i)
-    {
-        case 1:
-        if (level > 70)
-        {
-            ledON(&battery_leds[0]);
-            ledON(&battery_leds[1]);
-            ledON(&battery_leds[2]);
-        }
-        else if (level > 50)
-        {
-            ledON(&battery_leds[0]);
-            ledON(&battery_leds[1]);
-        }
-        else if (level > 30)
-        {
-            ledON(&battery_leds[0]);
-            ledON(&battery_leds[1]);
-        }
-        else if (level <= 30)
-        {
-            ledON(&battery_leds[0]);
-        }
-        led_i = 0;
-        break;
-    case 0:
-        if (level == 100)
+    #ifdef show_bat_status_all_time
+        enum zmk_usb_conn_state usb_status_con = zmk_usb_get_conn_state();
+        if (usb_status_con == ZMK_USB_CONN_NONE)
         {
             led_all_OFF();
+            return;
         }
-        else if (level > 70)
+    #endif
+
+    #ifdef disable_led_sleep_pc
+        enum usb_dc_status_code usb_status_suspend = zmk_usb_get_status();
+        if (usb_status_suspend == USB_DC_SUSPEND)
         {
-            ledOFF(&battery_leds[2]);
+            led_all_OFF();
+            return;
         }
-        else if (level > 30)
+    #endif
+
+    #ifdef real_bat_animation
+        uint8_t level = zmk_battery_state_of_charge();
+
+        switch (led_i)
         {
-            ledOFF(&battery_leds[1]);
+            case 1:
+            if (level > 70)
+            {
+                ledON(&battery_leds[0]);
+                ledON(&battery_leds[1]);
+                ledON(&battery_leds[2]);
+            }
+            else if (level > 50)
+            {
+                ledON(&battery_leds[0]);
+                ledON(&battery_leds[1]);
+            }
+            else if (level > 30)
+            {
+                ledON(&battery_leds[0]);
+                ledON(&battery_leds[1]);
+            }
+            else if (level <= 30)
+            {
+                ledON(&battery_leds[0]);
+            }
+            led_i = 0;
+            break;
+        case 0:
+            if (level == 100)
+            {
+                led_all_OFF();
+            }
+            else if (level > 70)
+            {
+                ledOFF(&battery_leds[2]);
+            }
+            else if (level > 30)
+            {
+                ledOFF(&battery_leds[1]);
+            }
+            if (level <= 15)
+            {
+                ledOFF(&battery_leds[0]);
+            }
+            led_i++;
+            break;
         }
-        if (level <= 15)
+        // led_all_OFF();
+        // return;
+    #else
+        for (int i = 0; i < 2; i++)
         {
-            ledOFF(&battery_leds[0]);
+            ledON(&battery_leds[i]);
+            k_msleep(LED_BATTERY_BLINK);
         }
-        led_i++;
-        break;
-    }
-    // led_all_OFF();
-    // return;
-#else
-    for (int i = 0; i < 2; i++)
-    {
-        ledON(&battery_leds[i]);
-        k_msleep(LED_BATTERY_BLINK);
-    }
-    led_all_OFF();
-    return;
-#endif
+        led_all_OFF();
+        return;
+    #endif
 }
 
 void led_bat_handler(struct k_work *work)
@@ -264,6 +260,7 @@ void check_ble_connection()
         {
             return;
         }
+        led_all_OFF();
         for (int i = 0; i < (sizeof(battery_leds) / sizeof(struct led)); i++)
         {
             blink_once(&battery_leds[i], LED_BLINK_CONN);
@@ -317,6 +314,7 @@ void bat_show_once_timer_handler(struct k_timer *dummy)
     k_work_submit_to_queue(zmk_workqueue_lowprio_work_q(), &bat_show_once_work);
 }
 K_TIMER_DEFINE(bat_show_once_timer, bat_show_once_timer_handler, NULL);
+
 void bat_show_once_work_handler(struct k_work *work)
 {
     uint8_t level = zmk_battery_state_of_charge();
@@ -364,8 +362,8 @@ void bat_show_once_work_handler(struct k_work *work)
         {
             blink(&battery_leds[0], LED_BATTERY_BLINK, 3);
         }
-        check_ble_connection();
         led_all_OFF();
+        check_ble_connection();
     }
     else
     {
@@ -487,24 +485,5 @@ void show_battery()
 
 void hide_battery()
 {
-    // led_all_OFF();
+    led_all_OFF();
 }
-// # zmk-gbEnki
-
-// XXX 100%
-// XXB 80%
-// XX  60%
-// XB  40%
-// X   20%
-// B   LOW
-// --------
-// XOO bt1
-// OXO bt2
-// OOX bt3
-// --------
-// XOO>XXO>XXX USB
-// XOO>OXO>OOX no connect
-
-// O - off
-// X - on
-// B - blink
